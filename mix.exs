@@ -40,6 +40,9 @@ Find the user guide in the github repo at: https://github.com/marcelog/elixir_am
   end
 
   defp deps do
-    []
+    [
+      {:ex_doc, "~> 0.7", only: :dev},
+      {:earmark, "~> 0.1", only: :dev}
+    ]
   end
 end
