@@ -19,16 +19,21 @@ end
 ```
 Then run mix deps.get to install it.
 
+Also add the app in your mix.exs file:
+```elixir
+  [
+    applications: [:logger, :elixir_ami],
+    ...
+  ]
+```
 ----
 
 # Connecting to Asterisk
 
-Use `ElixirAmi.Connection.start_link` or `ElixirAmi.Connection.start` as follows:
+To create a connection, you need to specify the connection information like this:
 
 ```elixir
-alias ElixirAmi.Connection, as: Conn
-
-{:ok, pid} = Conn.start_link %{
+connection_data = %{
   name: :my_connection,       # The gen_server connection will be registered with this name
   host: "192.168.0.123",
   port: 5038,
@@ -37,6 +42,27 @@ alias ElixirAmi.Connection, as: Conn
   connection_timeout: 5000,   # How many millseconds to wait when connecting
   reconnect_timeout: 5000     # Wait this many milliseconds before attempting reconnection
 }
+```
+## Using the built in supervisor
+
+The recommended way to create a connection is to take advantage of the built in supervisor,
+using `ElixirAmi.Supervisor.Ami`:
+
+```elixir
+alias ElixirAmi.Supervisor.Ami, as AmiSup
+
+{:ok, pid} = AmiSup.new connection_data
+```
+
+## Creating a connection without the supervisor
+
+To start a connection under your own supervision tree or OTP application structure,
+use `ElixirAmi.Connection.start_link` or `ElixirAmi.Connection.start` as follows:
+
+```elixir
+alias ElixirAmi.Connection, as: Conn
+
+{:ok, pid} = Conn.start_link connection_data
 ```
 
 # Sending an action

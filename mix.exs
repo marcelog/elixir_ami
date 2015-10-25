@@ -17,7 +17,10 @@ defmodule ElixirAmi.Mixfile do
   end
 
   def application do
-    [applications: [:logger]]
+    [
+      applications: [:logger],
+      mod: {ElixirAmi, []}
+    ]
   end
 
   defp description do
