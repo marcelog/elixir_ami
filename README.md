@@ -42,7 +42,7 @@ alias ElixirAmi.Connection, as: Conn
 # Sending an action
 
 You can find actions inside the [Action](https://github.com/marcelog/elixir_ami/blob/master/lib/elixir_ami/action.ex)
-module.
+module (feel free to open pull requests to add more!).
 
 ```elixir
 alias ElixirAmi.Action, as: Action
@@ -69,6 +69,30 @@ may have and I'll try to fix them.
 
 All related events will be returned in the `events` key of the response.
 
+## Sending custom actions
+
+If you want to send an action that is not already supported in the `Action` module, you have two choices:
+
+ * Open a pull request (recommended :))
+ * Use the function `Action.new/3` to create your custom action and send it. This is actually
+ the function used behind the scenes to send the supported actions.
+
+### Using Action.new
+
+```elixir
+Conn.send_action :my_connection, Action.new(
+  "my_cool_action",
+  %{mykey: "myvalue"},
+  %{myvar: "myvarvalue"}
+)
+```
+
+Where the arguments are:
+
+  1. The action name
+  2. The key values for the action
+  3. Additional variables
+
 ----
 
 # Receiving events
@@ -78,6 +102,8 @@ with their filters, both are of type function and will receive 2 arguments:
 
  * source: The connection name.
  * event: The event received from asterisk.
+
+## Registering event listeners
 
 ```elixir
 listener_id = Conn.add_listener(
@@ -91,7 +117,7 @@ The filter must return `true` or `false`. If it returns `true`, the second funct
 (in this case `MyModule.my_function/2` will be called with the same arguments) to
 process the event, the result is discarded.
 
-To remove an event listener:
+## Removing event listeners
 
 ```elixir
 Conn.del_listener :my_connection, listener_id
