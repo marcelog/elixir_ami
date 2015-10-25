@@ -24,12 +24,12 @@ defmodule ElixirAmi.Message do
   @doc """
   Unserializes a response or an event based on the list of lines given.
   """
-  @spec unserialize(iolist) :: Event.t | Response.t
-  def unserialize(data = ["Response:" <> _rest| _]) do
-    Response.unserialize data
+  @spec unserialize(atom, iolist) :: Event.t | Response.t
+  def unserialize(source, data = ["Response:" <> _rest| _]) do
+    Response.unserialize source, data
   end
 
-  def unserialize(data) do
-    Event.unserialize data
+  def unserialize(source, data) do
+    Event.unserialize source, data
   end
 end

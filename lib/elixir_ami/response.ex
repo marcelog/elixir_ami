@@ -19,6 +19,7 @@ defmodule ElixirAmi.Response do
   """
   defstruct \
     action_id: nil,
+    source: nil,
     success: nil,
     complete: true,
     keys: %{},
@@ -44,9 +45,9 @@ defmodule ElixirAmi.Response do
   @doc """
   This will return a Response given a list of received lines from Asterisk.
   """
-  @spec unserialize(iolist) :: t
-  def unserialize(data) do
-    Enum.reduce data, %ElixirAmi.Response{}, fn(line, response) ->
+  @spec unserialize(atom, iolist) :: t
+  def unserialize(source, data) do
+    Enum.reduce data, %ElixirAmi.Response{source: source}, fn(line, response) ->
       [k, v] = for s <- (String.split line, ":", parts: 2), do: String.strip s
       k = String.downcase k
       case k do

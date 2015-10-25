@@ -69,8 +69,7 @@ defmodule ElixirAmi.Connection do
   """
   @spec start_link(t) :: GenServer.on_start
   def start_link(info) do
-    server_name = String.to_atom "ami_#{info.name}"
-    GenServer.start_link __MODULE__, info, name: server_name
+    GenServer.start_link __MODULE__, info, name: info.name
   end
 
   @doc """
@@ -78,48 +77,47 @@ defmodule ElixirAmi.Connection do
   """
   @spec start(t) :: GenServer.on_start
   def start(info) do
-    server_name = String.to_atom "ami_#{info.name}"
-    GenServer.start __MODULE__, info, name: server_name
+    GenServer.start __MODULE__, info, name: info.name
   end
 
   @doc """
   Closes an AMI connection.
   """
-  @spec close(pid) :: :ok
-  def close(pid) do
-    GenServer.cast pid, :close
+  @spec close(GenServer.server) :: :ok
+  def close(server) do
+    GenServer.cast server, :close
   end
 
   @doc """
   Tests if this connection is open and logged in.
   """
-  @spec ready?(pid) :: boolean
-  def ready?(pid) do
-    GenServer.call pid, :ready?
+  @spec ready?(GenServer.server) :: boolean
+  def ready?(server) do
+    GenServer.call server, :ready?
   end
 
   @doc """
   Sends an action to asterisk.
   """
-  @spec send_action(pid, Action.t) :: Response.t
-  def send_action(pid, action) do
-    GenServer.call pid, {:send, action}
+  @spec send_action(GenServer.server, Action.t) :: Response.t
+  def send_action(server, action) do
+    GenServer.call server, {:send, action}
   end
 
   @doc """
   Adds an event listener with the given filter.
   """
-  @spec add_listener(pid, function, function) :: listener_id
-  def add_listener(pid, filter, listener) do
-    GenServer.call pid, {:add_listener, filter, listener}
+  @spec add_listener(GenServer.server, function, function) :: listener_id
+  def add_listener(server, filter, listener) do
+    GenServer.call server, {:add_listener, filter, listener}
   end
 
   @doc """
   Removes an event listener.
   """
-  @spec del_listener(pid, listener_id) :: :ok
-  def del_listener(pid, id) do
-    GenServer.call pid, {:del_listener, id}
+  @spec del_listener(GenServer.server, listener_id) :: :ok
+  def del_listener(server, id) do
+    GenServer.call server, {:del_listener, id}
   end
 
   @doc """
@@ -134,7 +132,7 @@ defmodule ElixirAmi.Connection do
       ready: false,
       lines: [],
       actions: %{},
-      listeners: []
+      listeners: %{}
     }}
   end
 
@@ -143,6 +141,20 @@ defmodule ElixirAmi.Connection do
   """
   @spec handle_call(term, term, state) ::
     {:noreply, state} | {:reply, term, state}
+
+  def handle_call({:add_listener, filter, listener}, _from, state) do
+    id = ElixirAmi.Util.unique_id
+    {:reply, id, %{state |
+      listeners: Map.put(
+        state.listeners, id, %{filter: filter, listener: listener}
+      )
+    }}
+  end
+
+  def handle_call({:del_listener, id}, _from, state) do
+    {:reply, :ok, %{state | listeners: Map.delete(state.listeners, id)}}
+  end
+
   def handle_call({:send, action}, from, state) do
     astsend action
     {:noreply, %{state |
@@ -221,7 +233,7 @@ defmodule ElixirAmi.Connection do
   end
 
   def handle_info({:tcp, socket, "\r\n"}, state = %{socket: socket}) do
-    message = Message.unserialize Enum.reverse(state.lines)
+    message = Message.unserialize state.info.name, Enum.reverse(state.lines)
     log :debug, "Message: #{inspect message}"
 
     action_data = state.actions[message.action_id]
@@ -235,7 +247,16 @@ defmodule ElixirAmi.Connection do
         )}
       end
       %ElixirAmi.Event{} -> if is_nil action_data do
-        # Discard event without caller/response
+        spawn fn ->
+          for {id, l} <- state.listeners do
+            spawn fn ->
+              log :debug, "running listener #{id}"
+              if l.filter.(state.info.name, message) do
+                l.listener.(state.info.name, message)
+              end
+            end
+          end
+        end
         state
       else
         response = Response.add_event action_data.response, message

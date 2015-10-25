@@ -1,7 +1,7 @@
 # ElixirAmi
 
 An [Asterisk](http://www.asterisk.org/) client for the [AMI](https://wiki.asterisk.org/wiki/display/AST/AMI+v2+Specification)
-protocol written in [Elixir](http://elixir-lang.org/).
+protocol written in [Elixir](http://elixir-lang.org/). For a quick introduction to AMI you can read [this](http://marcelog.github.io/articles/php_asterisk_manager_interface_protocol_tutorial_introduction.html).
 
 This is similar to [PAMI](https://github.com/marcelog/PAMI) for PHP, [NAMI](https://github.com/marcelog/Nami) for NodeJS, and
 [erlami](https://github.com/marcelog/erlami) for Erlang.
@@ -29,7 +29,7 @@ Use `ElixirAmi.Connection.start_link` or `ElixirAmi.Connection.start` as follows
 alias ElixirAmi.Connection, as: Conn
 
 {:ok, pid} = Conn.start_link %{
-  name: "my_connection",
+  name: :my_connection,       # The gen_server connection will be registered with this name
   host: "192.168.0.123",
   port: 5038,
   username: "frank",
@@ -47,9 +47,10 @@ module.
 ```elixir
 alias ElixirAmi.Action, as: Action
 
-Conn.send_action pid, Action.ping
+Conn.send_action :my_connection, Action.ping
 
 %ElixirAmi.Response{
+  source: :my_connection,
   action_id: "-576460752303423460",
   complete: true,
   events: [],
@@ -66,8 +67,37 @@ cases where the Asterisk will violate the AMI protocol and this will **not** be 
 the implementation of the events is not consistent, or it's just broken. Please report any issues you
 may have and I'll try to fix them.
 
+All related events will be returned in the `events` key of the response.
+
 ----
 
+# Receiving events
+
+To receive asynchronous events (i.e: not related to a response) you can register listeners
+with their filters, both are of type function and will receive 2 arguments:
+
+ * source: The connection name.
+ * event: The event received from asterisk.
+
+```elixir
+listener_id = Conn.add_listener(
+  :my_connection,
+  fn(source, event) -> event.event === "varset" end,
+  &MyModule.my_function/2
+)
+```
+
+The filter must return `true` or `false`. If it returns `true`, the second function
+(in this case `MyModule.my_function/2` will be called with the same arguments) to
+process the event, the result is discarded.
+
+To remove an event listener:
+
+```elixir
+Conn.del_listener :my_connection, listener_id
+```
+
+----
 # Documentation
 
 Feel free to take a look at the [documentation](http://hexdocs.pm/elixir_ami/)

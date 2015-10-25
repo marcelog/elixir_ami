@@ -19,6 +19,7 @@ defmodule ElixirAmi.Event do
   """
   defstruct \
     event: nil,
+    source: nil,
     action_id: nil,
     keys: %{},
     variables: %{}
@@ -28,9 +29,9 @@ defmodule ElixirAmi.Event do
   @doc """
   This will return an Event given a list of received lines from Asterisk.
   """
-  @spec unserialize(iolist) :: t
-  def unserialize(data) do
-    Enum.reduce data, %ElixirAmi.Event{}, fn(line, event) ->
+  @spec unserialize(atom, iolist) :: t
+  def unserialize(source, data) do
+    Enum.reduce data, %ElixirAmi.Event{source: source}, fn(line, event) ->
       [k, v] = for s <- (String.split line, ":", parts: 2), do: String.strip s
       k = String.downcase k
       case k do

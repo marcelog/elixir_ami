@@ -235,7 +235,7 @@ defmodule ElixirAmi.Action do
   @spec new(String.t, Map.t, Map.t) :: t
   def new(name, keys \\ %{}, variables \\ %{}) do
     %ElixirAmi.Action{
-      id: to_string(:erlang.unique_integer),
+      id: ElixirAmi.Util.unique_id,
       name: name,
       keys: keys,
       variables: variables
