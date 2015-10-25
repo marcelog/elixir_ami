@@ -122,12 +122,22 @@ defmodule ElixirAmi.Action do
   end
 
   @doc """
+  See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_Hangup
+  """
+  @spec hangup(String.t, Integer.t) :: t
+  def hangup(channel, cause) do
+    new "Hangup", %{
+      channel: channel,
+      cause: to_string(cause)
+    }
+  end
+
+  @doc """
   See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_Reload
   """
   @spec reload(String.t) :: t
   def reload(module) do
     new "Reload", %{
-      channel: channel,
       module: module
     }
   end
@@ -141,6 +151,16 @@ defmodule ElixirAmi.Action do
       channel: channel,
       variable: name,
       value: to_string(value)
+    }
+  end
+
+  @doc """
+  See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_StopMonitor
+  """
+  @spec stop_monitor(String.t) :: t
+  def stop_monitor(channel) do
+    new "StopMonitor", %{
+      channel: channel
     }
   end
 
