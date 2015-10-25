@@ -133,12 +133,45 @@ defmodule ElixirAmi.Action do
   end
 
   @doc """
+  See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_ListCategories
+  """
+  def list_categories(filename) do
+    new "ListCategories", %{
+      filename: filename
+    }
+  end
+
+  @doc """
+  See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_Monitor
+  """
+  @spec monitor(String.t, String.t, String.t, String.t) :: t
+  def monitor(channel, file, format, mix) do
+    new "Monitor", %{
+      channel: channel,
+      file: file,
+      format: format,
+      mix: mix
+    }
+  end
+
+  @doc """
   See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_Reload
   """
   @spec reload(String.t) :: t
   def reload(module) do
     new "Reload", %{
       module: module
+    }
+  end
+
+  @doc """
+  See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_SendText
+  """
+  @spec send_text(String.t, String.t) :: t
+  def send_text(channel, message) do
+    new "Setvar", %{
+      channel: channel,
+      message: message
     }
   end
 
@@ -151,6 +184,24 @@ defmodule ElixirAmi.Action do
       channel: channel,
       variable: name,
       value: to_string(value)
+    }
+  end
+
+  @doc """
+  See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_SIPpeers
+  """
+  @spec sip_peers() :: t
+  def sip_peers() do
+    new "SIPpeers"
+  end
+
+  @doc """
+  See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_SIPqualifypeer
+  """
+  @spec sip_qualify_peer(String.t) :: t
+  def sip_qualify_peer(peer) do
+    new "SIPqualifypeer", %{
+      peer: peer
     }
   end
 
