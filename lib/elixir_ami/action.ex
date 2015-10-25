@@ -201,6 +201,9 @@ defmodule ElixirAmi.Action do
     }, variables
   end
 
+  @doc """
+  See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_Originate
+  """
   @spec originate(
     String.t, String.t, String.t,
     Integer.t, String.t, String.t, boolean, String.t, Map.t
