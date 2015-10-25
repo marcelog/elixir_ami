@@ -21,7 +21,6 @@ defmodule ElixirAmi.Response do
     action_id: nil,
     success: nil,
     complete: true,
-    has_events: false,
     keys: %{},
     variables: %{},
     events: []
