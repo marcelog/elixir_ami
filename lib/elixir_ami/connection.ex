@@ -73,7 +73,7 @@ defmodule ElixirAmi.Connection do
   end
 
   @doc """
-  Starts and link an AMI connection.
+  Starts an AMI connection.
   """
   @spec start(t) :: GenServer.on_start
   def start(info) do
