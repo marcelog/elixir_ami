@@ -294,6 +294,12 @@ defmodule ElixirAmi.Connection do
     {:noreply, %{state | lines: [line|state.lines]}}
   end
 
+  def handle_info({:tcp_closed, socket}, state = %{socket: socket}) do
+    log :debug, "asterisk closed connection"
+    :gen_tcp.close state.socket
+    {:stop, :normal, state}
+  end
+
   def handle_info(message, state) do
     log :warn, "unknown message: #{inspect message}"
     {:noreply, state}

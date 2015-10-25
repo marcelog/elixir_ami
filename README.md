@@ -90,8 +90,8 @@ Conn.send_action :my_connection, Action.new(
 Where the arguments are:
 
   1. The action name
-  2. The key values for the action
-  3. Additional variables
+  2. The key values for the action (optional)
+  3. Additional variables (optional)
 
 ----
 
