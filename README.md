@@ -46,7 +46,8 @@ connection_data = %{
 ## Using the built in supervisor
 
 The recommended way to create a connection is to take advantage of the built in supervisor,
-using `ElixirAmi.Supervisor.Ami`:
+using `ElixirAmi.Supervisor.Ami` (this connection will be automatically supervised and restarted
+in case of a crash):
 
 ```elixir
 alias ElixirAmi.Supervisor.Ami, as AmiSup
