@@ -50,7 +50,7 @@ defmodule ElixirAmi.Connection do
   defmacro log(level, message) do
     quote do
       state = var! state
-      Logger.unquote(level)("AMI: #{state.info.name} #{unquote(message)}")
+      Logger.unquote(level)("ElixirAmi: #{state.info.name} #{unquote(message)}")
     end
   end
 

@@ -39,6 +39,7 @@ defmodule ElixirAmi.Supervisor.Ami do
   """
   @spec init([]) :: {:ok, tuple}
   def init([]) do
+    Logger.debug "ElixirAmi: Starting connection supervisor"
     children = [
       worker(ElixirAmi.Connection, [], restart: :permanent)
     ]
