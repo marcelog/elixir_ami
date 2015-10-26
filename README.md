@@ -33,7 +33,9 @@ Also add the app in your mix.exs file:
 To create a connection, you need to specify the connection information like this:
 
 ```elixir
-connection_data = %{
+alias ElixirAmi.Connection, as: Conn
+
+connection_data = %Conn{
   name: :my_connection,       # The gen_server connection will be registered with this name
   host: "192.168.0.123",
   port: 5038,
@@ -61,7 +63,6 @@ To start a connection under your own supervision tree or OTP application structu
 use `ElixirAmi.Connection.start_link` or `ElixirAmi.Connection.start` as follows:
 
 ```elixir
-alias ElixirAmi.Connection, as: Conn
 
 {:ok, pid} = Conn.start_link connection_data
 ```

@@ -27,8 +27,8 @@ defmodule ElixirAmi.Connection do
     port: nil,
     username: nil,
     password: nil,
-    connect_timeout: nil,
-    reconnect_timeout: nil
+    connect_timeout: 5000,
+    reconnect_timeout: 5000
 
   alias ElixirAmi.Action, as: Action
   alias ElixirAmi.Message, as: Message
