@@ -54,13 +54,17 @@ defmodule ElixirAmi.Connection do
     end
   end
 
-  defmacro astsend(action) do
+  defmacro astsend(action, is_login \\ false) do
     quote do
       state = var! state
-      action = unquote(action)
-      data = [Action.serialize(action), "\r\n"]
-      log :debug, "sending: #{inspect data}"
-      :ok = :gen_tcp.send state.socket, data
+      if state.ready or unquote(is_login) do
+        action = unquote(action)
+        data = [Action.serialize(action), "\r\n"]
+        log :debug, "sending: #{inspect data}"
+        :ok = :gen_tcp.send state.socket, data
+      else
+        :not_ready
+      end
     end
   end
 
@@ -131,6 +135,7 @@ defmodule ElixirAmi.Connection do
       socket: nil,
       ready: false,
       lines: [],
+      login_action_id: nil,
       actions: %{},
       listeners: %{}
     }}
@@ -156,13 +161,15 @@ defmodule ElixirAmi.Connection do
   end
 
   def handle_call({:send, action}, from, state) do
-    astsend action
-    {:noreply, %{state |
-      actions: Map.put(state.actions, action.id, %{
-        caller: from,
-        response: nil
-      })
-    }}
+    case astsend action do
+      :not_ready -> {:reply, :not_ready, state}
+      :ok -> {:noreply, %{state |
+        actions: Map.put(state.actions, action.id, %{
+          caller: from,
+          response: nil
+        })
+      }}
+    end
   end
 
   def handle_call(:ready?, _from, state) do
@@ -209,7 +216,7 @@ defmodule ElixirAmi.Connection do
         ) do
           {:ok, socket} ->
             log :info, "connected"
-            {:noreply, %{state | ready: true, socket: socket}}
+            {:noreply, %{state | socket: socket}}
           e ->
             log :error, "could not connect to #{state.info.host}: #{inspect e}"
             schedule_reconnect
@@ -228,8 +235,9 @@ defmodule ElixirAmi.Connection do
   ) do
     log :debug, "got salutation: #{salutation}"
     :ok = :inet.setopts socket, [{:active, :once}]
-    astsend Action.login(state.info.username, state.info.password)
-    {:noreply, state}
+    login_action = Action.login(state.info.username, state.info.password)
+    astsend login_action, true
+    {:noreply, %{state | login_action_id: login_action.id}}
   end
 
   def handle_info({:tcp, socket, "\r\n"}, state = %{socket: socket}) do
@@ -238,13 +246,17 @@ defmodule ElixirAmi.Connection do
 
     action_data = state.actions[message.action_id]
     state = case message do
-      %ElixirAmi.Response{} -> if is_nil action_data do
-        # Discard response without caller
-        state
-      else
-        %{state | actions: Map.put(
-          state.actions, message.action_id, %{action_data | response: message}
-        )}
+      %ElixirAmi.Response{} -> cond do
+        message.action_id === state.login_action_id ->
+          Logger.debug "Asdads"
+          %{state | ready: true}
+        is_nil action_data ->
+          # Discard response without caller
+          state
+        true ->
+          %{state | actions: Map.put(
+            state.actions, message.action_id, %{action_data | response: message}
+          )}
       end
       %ElixirAmi.Event{} -> if is_nil action_data do
         spawn fn ->
