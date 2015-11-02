@@ -248,7 +248,6 @@ defmodule ElixirAmi.Connection do
     state = case message do
       %ElixirAmi.Response{} -> cond do
         message.action_id === state.login_action_id ->
-          Logger.debug "Asdads"
           %{state | ready: true}
         is_nil action_data ->
           # Discard response without caller
