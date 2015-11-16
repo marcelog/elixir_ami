@@ -194,7 +194,7 @@ defmodule ElixirAmi.Action do
       context: context,
       priority: priority,
       timeout: to_string(timeout),
-      caller_id: caller_id,
+      callerid: caller_id,
       account: account,
       async: to_string(async),
       codecs: codecs
@@ -217,7 +217,7 @@ defmodule ElixirAmi.Action do
       application: application,
       data: data,
       timeout: to_string(timeout),
-      caller_id: caller_id,
+      callerid: caller_id,
       account: account,
       async: to_string(async),
       codecs: codecs
