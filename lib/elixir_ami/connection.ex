@@ -262,8 +262,8 @@ defmodule ElixirAmi.Connection do
           for {id, l} <- state.listeners do
             spawn fn ->
               log :debug, "running listener #{id}"
-              if l.filter.(state.info.name, message) do
-                l.listener.(state.info.name, message)
+              if l.filter.(state.info.name, id, message) do
+                l.listener.(state.info.name, id, message)
               end
             end
           end

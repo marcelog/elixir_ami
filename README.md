@@ -126,9 +126,10 @@ Where the arguments are:
 # Receiving events
 
 To receive asynchronous events (i.e: not related to a response) you can register listeners
-with their filters, both are of type function and will receive 2 arguments:
+with their filters, both are of type function and will receive 3 arguments:
 
  * source: The connection name.
+ * listener_id: The current listener id.
  * event: The event received from asterisk.
 
 ## Registering event listeners
@@ -136,8 +137,8 @@ with their filters, both are of type function and will receive 2 arguments:
 ```elixir
 listener_id = Conn.add_listener(
   :my_connection,
-  fn(source, event) -> event.event === "varset" end,
-  &MyModule.my_function/2
+  fn(source, listener_id, event) -> event.event === "varset" end,
+  &MyModule.my_function/3
 )
 ```
 
