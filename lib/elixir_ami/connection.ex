@@ -28,7 +28,8 @@ defmodule ElixirAmi.Connection do
     username: nil,
     password: nil,
     connect_timeout: 5000,
-    reconnect_timeout: 5000
+    reconnect_timeout: 5000,
+    ssl_options: nil
 
   alias ElixirAmi.Action, as: Action
   alias ElixirAmi.Message, as: Message
@@ -61,7 +62,7 @@ defmodule ElixirAmi.Connection do
         action = unquote(action)
         data = [Action.serialize(action), "\r\n"]
         log :debug, "sending: #{inspect data}"
-        :ok = :gen_tcp.send state.socket, data
+        :ok = :erlang.apply state.socket_module, :send, [state.socket, data]
       else
         :not_ready
       end
@@ -130,12 +131,18 @@ defmodule ElixirAmi.Connection do
   @spec init(t) :: {:ok, state}
   def init(info) do
     send self, :connect
+    socket_module = if(is_nil info.ssl_options) do
+      :gen_tcp
+    else
+      :ssl
+    end
     {:ok, %{
       info: info,
       socket: nil,
       ready: false,
       lines: [],
       login_action_id: nil,
+      socket_module: socket_module,
       actions: %{},
       listeners: %{}
     }}
@@ -188,7 +195,7 @@ defmodule ElixirAmi.Connection do
   def handle_cast(:close, state) do
     log :debug, "shutting down"
     if not is_nil state.socket do
-      :gen_tcp.close state.socket
+      :erlang.apply state.socket_module, :close, [state.socket]
     end
     {:stop, :normal, state}
   end
@@ -209,11 +216,16 @@ defmodule ElixirAmi.Connection do
       {:ok, hostinfo} ->
         host = hd hostent(hostinfo, :h_addr_list)
         log :debug, "using address: #{inspect host}"
-        case :gen_tcp.connect(
+        ssl_options = if(is_nil state.info.ssl_options) do
+          []
+        else
+          state.info.ssl_options
+        end
+        case :erlang.apply(state.socket_module, :connect, [
           host, state.info.port,
-          [{:mode, :binary}, {:packet, :line}, {:active, :once}],
+          [{:mode, :binary}, {:packet, :line}, {:active, :once}|ssl_options],
           state.info.reconnect_timeout
-        ) do
+        ]) do
           {:ok, socket} ->
             log :info, "connected"
             {:noreply, %{state | socket: socket}}
@@ -230,14 +242,25 @@ defmodule ElixirAmi.Connection do
   end
 
   def handle_info(
+    {:ssl, socket, salutation = "Asterisk Call Manager" <> _rest},
+    state = %{socket: socket}
+  ) do
+    handle_info {:tcp, socket, salutation}, state
+  end
+
+  def handle_info(
     {:tcp, socket, salutation = "Asterisk Call Manager" <> _rest},
     state = %{socket: socket}
   ) do
     log :debug, "got salutation: #{salutation}"
-    :ok = :inet.setopts socket, [{:active, :once}]
+    :ok = setopts socket, [{:active, :once}], state
     login_action = Action.login(state.info.username, state.info.password)
     astsend login_action, true
     {:noreply, %{state | login_action_id: login_action.id}}
+  end
+
+  def handle_info({:ssl, socket, "\r\n"}, state = %{socket: socket}) do
+    handle_info {:tcp, socket, "\r\n"}, state
   end
 
   def handle_info({:tcp, socket, "\r\n"}, state = %{socket: socket}) do
@@ -294,20 +317,28 @@ defmodule ElixirAmi.Connection do
     else
       state
     end
-    :ok = :inet.setopts socket, [{:active, :once}]
+    :ok = setopts socket, [{:active, :once}], state
     {:noreply, %{state | lines: []}}
+  end
+
+  def handle_info({:ssl, socket, line}, state = %{socket: socket}) do
+    handle_info {:tcp, socket, line}, state
   end
 
   def handle_info({:tcp, socket, line}, state = %{socket: socket}) do
     {line, "\r\n"} = String.split_at line, -1
     log :debug, "got line: #{inspect line}"
-    :ok = :inet.setopts socket, [{:active, :once}]
+    :ok = setopts socket, [{:active, :once}], state
     {:noreply, %{state | lines: [line|state.lines]}}
+  end
+
+  def handle_info({:ssl_closed, socket}, state = %{socket: socket}) do
+    handle_info {:tcp_closed, socket}, state
   end
 
   def handle_info({:tcp_closed, socket}, state = %{socket: socket}) do
     log :debug, "asterisk closed connection"
-    :gen_tcp.close state.socket
+    :erlang.apply state.socket_module, :close, [state.socket]
     {:stop, :normal, state}
   end
 
@@ -330,6 +361,16 @@ defmodule ElixirAmi.Connection do
   @spec terminate(term, state) :: :ok
   def terminate(reason, state) do
     log :info, "terminating with: #{inspect reason}"
+    :ok
+  end
+
+  defp setopts(socket, options, state) do
+    opts_module = if(is_nil state.info.ssl_options) do
+      :inet
+    else
+      :ssl
+    end
+    :ok = :erlang.apply opts_module, :setopts, [socket, options]
     :ok
   end
 end
