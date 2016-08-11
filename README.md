@@ -42,7 +42,7 @@ connection_data = %Conn{
   username: "frank",
   password: "lean",
   connection_timeout: 5000,   # How many millseconds to wait when connecting
-  reconnect_timeout: 5000     # Wait this many milliseconds before attempting reconnection,
+  reconnect_timeout: 5000,    # Wait this many milliseconds before attempting reconnection,
   ssl_options: nil            # Or [ssl:ssl_option()]. Will try a regular TCP connection if this value is nil
 }
 ```
