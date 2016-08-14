@@ -128,10 +128,9 @@ defmodule ElixirAmi.Connection do
     GenServer.server, function, pid, listener_options
   ) :: listener_id
   def forward(server, filter, process, options \\ []) do
-    _ = add_listener server, filter, fn(node, _id, message) ->
+    add_listener server, filter, fn(node, _id, message) ->
       send process, {node, message}
     end, options
-    :ok
   end
 
   @doc """
