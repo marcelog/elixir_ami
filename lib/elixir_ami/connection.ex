@@ -39,6 +39,8 @@ defmodule ElixirAmi.Connection do
 
   @type t :: ElixirAmi.Connection
   @type listener_id :: String.t
+  @type listener_option :: :once
+  @type listener_options :: [listener_option]
   @typep state :: Map.t
 
   defmacro schedule_reconnect() do
@@ -112,9 +114,11 @@ defmodule ElixirAmi.Connection do
   @doc """
   Adds an event listener with the given filter.
   """
-  @spec add_listener(GenServer.server, function, function) :: listener_id
-  def add_listener(server, filter, listener) do
-    GenServer.call server, {:add_listener, filter, listener}
+  @spec add_listener(
+    GenServer.server, function, function, listener_options
+  ) :: listener_id
+  def add_listener(server, filter, listener, options \\ []) do
+    GenServer.call server, {:add_listener, filter, listener, options}
   end
 
   @doc """
@@ -154,8 +158,17 @@ defmodule ElixirAmi.Connection do
   @spec handle_call(term, term, state) ::
     {:noreply, state} | {:reply, term, state}
 
-  def handle_call({:add_listener, filter, listener}, _from, state) do
+  def handle_call({:add_listener, filter, listener, options}, _from, state) do
+    me = self
     id = ElixirAmi.Util.unique_id
+    listener = if :once in options do
+      fn(name, id, message) ->
+        listener.(name, id, message)
+        del_listener me, id
+      end
+    else
+      listener
+    end
     {:reply, id, %{state |
       listeners: Map.put(
         state.listeners, id, %{filter: filter, listener: listener}
@@ -164,6 +177,7 @@ defmodule ElixirAmi.Connection do
   end
 
   def handle_call({:del_listener, id}, _from, state) do
+    log :debug, "removing listener #{id}"
     {:reply, :ok, %{state | listeners: Map.delete(state.listeners, id)}}
   end
 
