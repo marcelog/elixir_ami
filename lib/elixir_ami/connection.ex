@@ -122,6 +122,19 @@ defmodule ElixirAmi.Connection do
   end
 
   @doc """
+  Forward event.
+  """
+  @spec forward(
+    GenServer.server, function, pid, listener_options
+  ) :: listener_id
+  def forward(server, filter, process, options \\ []) do
+    _ = add_listener server, filter, fn(node, _id, message) ->
+      send process, {node, message}
+    end, options
+    :ok
+  end
+
+  @doc """
   Removes an event listener.
   """
   @spec del_listener(GenServer.server, listener_id) :: :ok
