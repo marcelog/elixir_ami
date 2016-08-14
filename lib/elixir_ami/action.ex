@@ -238,6 +238,19 @@ defmodule ElixirAmi.Action do
   end
 
   @doc """
+  See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_Redirect
+  """
+  @spec redirect(String.t, String.t, String.t, String.t) :: t
+  def redirect(channel, context, exten, priority) do
+    new "Redirect", %{
+      channel: channel,
+      exten: exten,
+      context: context,
+      priority: priority
+    }
+  end
+
+  @doc """
   See: https://wiki.asterisk.org/wiki/display/AST/ManagerAction_ParkedCalls
   """
   @spec parked_calls() :: t
