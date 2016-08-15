@@ -142,6 +142,99 @@ defmodule ElixirAmi.Connection do
   end
 
   @doc """
+  Waits for an asyncagistart event on an optional channel and starts an
+  agi application with elixir_agi.
+  """
+  @spec async_agi(GenServer.server, module, any, String.t) :: :ok
+  def async_agi(server, app_module, app_state, channel \\ nil) do
+    caller = self
+    # Setup a listener for AsyncAGIStart so a new AGI App can be started
+    add_listener(
+      server,
+      fn(_node, _listener_id, e) ->
+        e.event === "asyncagistart" and (
+          (is_nil channel) or (channel === e.keys["channel"])
+        )
+      end,
+      fn(_node, listener_id, e) ->
+        ets = :ets.new :agi, [
+          {:read_concurrency, false},
+          {:write_concurrency, false},
+          :public
+        ]
+        :ets.give_away ets, caller, {:asyncagi_table}
+        # Add a listener so AGI responses can be sent to caller.
+        agi_command_listener = add_listener(
+          server,
+          fn(_node, _listener_id, agiexec_e) ->
+            agiexec_e.event === "asyncagiexec" and
+            agiexec_e.keys["channel"] === e.keys["channel"]
+          end,
+          fn(_node, _listener_id, agiexec_e) ->
+            [{_, lines}] = :ets.lookup ets, :lines
+            [{result, _}] = Map.to_list URI.decode_query(agiexec_e.keys["result"])
+            true = :ets.insert ets, [{:lines, lines ++ [result]}]
+          end
+        )
+        # Listen for a Hangup event for this channel so we can cleanup
+        add_listener(
+          server,
+          fn(_node, _hangup_listener_id, hangup_e) ->
+            hangup_e.event === "hangup" and
+            hangup_e.keys["channel"] === e.keys["channel"]
+          end,
+          fn(_node, _listener_id, _hangup_e) ->
+            del_listener server, agi_command_listener
+          end,
+          [:once]
+        )
+        # Read AGI variables
+        env = URI.decode_query e.keys["env"]
+        [{env, _}] = Map.to_list env
+        lines = String.split(env, "\n") |>
+          Enum.reverse |>
+          tl |>
+          Enum.reverse |>
+          Enum.map(fn(x) -> "#{x}\n" end)
+        true = :ets.insert_new ets, [{:lines, lines}]
+        reader = fn() ->
+          Enum.reduce_while((1..500000), nil, fn(_, acc) ->
+            case :ets.lookup ets, :lines do
+              [{:lines, []}] ->
+                :timer.sleep 100
+                {:cont, acc}
+              [{:lines, [l|lines]}] ->
+                true = :ets.insert ets, [{:lines, lines}]
+                {:halt, l}
+            end
+          end)
+        end
+        writer = fn(data) ->
+          [data, _] = data
+          command_id = ElixirAmi.Util.unique_id
+          action = Action.agi e.keys["channel"], data, command_id
+          response = send_action server, action
+          true = response.success
+          :ok
+        end
+        init = fn() ->
+          :ok
+        end
+        close = fn() ->
+          :ok
+        end
+        {:ok, _pid} = ElixirAgi.Supervisor.Agi.new(
+          app_module, app_state, init, reader, writer, close
+        )
+        # Don't start another AGI App if a channel was explicitely given
+        if not is_nil channel do
+          del_listener server, listener_id
+        end
+      end
+    )
+  end
+
+  @doc """
   GenServer callback
   """
   @spec init(t) :: {:ok, state}
@@ -173,6 +266,7 @@ defmodule ElixirAmi.Connection do
   def handle_call({:add_listener, filter, listener, options}, _from, state) do
     me = self
     id = ElixirAmi.Util.unique_id
+    Logger.info "adding listener: #{id}"
     listener = if :once in options do
       fn(name, id, message) ->
         listener.(name, id, message)

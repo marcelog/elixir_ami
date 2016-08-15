@@ -14,7 +14,7 @@ To use it in your Mix projects, first add it as a dependency:
 
 ```elixir
 def deps do
-  [{:elixir_ami, "~> 0.0.3"}]
+  [{:elixir_ami, "~> 0.0.10"}]
 end
 ```
 Then run mix deps.get to install it.
@@ -151,6 +151,26 @@ process the event, the result is discarded.
 
 ```elixir
 Conn.del_listener :my_connection, listener_id
+```
+
+----
+
+# Async AGI Support
+Async AGI is supported with the use of [elixir_agi](https://github.com/marcelog/elixir_agi).
+
+```elixir
+Conn.async_agi :my_connection, TestAgiApp, %{}
+```
+
+This will start listening for [AsyncAGIStart](https://wiki.asterisk.org/wiki/display/AST/Asterisk+13+ManagerEvent_AsyncAGIStart) events
+on the given connection and launch the AGI App contained in the module `TestAgiApp` and start it with the given
+initial state `%{}`.
+
+Note that this will listen for AsyncAGIStart events for **all channels**. You can specify a channel name with the
+optional ending argument:
+
+```elixir
+Conn.async_agi :my_connection, TestAgiApp, %{}, "SIP/trunk-234132423"
 ```
 
 ----
