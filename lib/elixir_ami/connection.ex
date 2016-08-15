@@ -199,13 +199,19 @@ defmodule ElixirAmi.Connection do
         true = :ets.insert_new ets, [{:lines, lines}]
         reader = fn() ->
           Enum.reduce_while((1..500000), nil, fn(_, acc) ->
-            case :ets.lookup ets, :lines do
-              [{:lines, []}] ->
-                :timer.sleep 100
-                {:cont, acc}
-              [{:lines, [l|lines]}] ->
-                true = :ets.insert ets, [{:lines, lines}]
-                {:halt, l}
+            try do
+              case :ets.lookup ets, :lines do
+                [{:lines, []}] ->
+                  :timer.sleep 100
+                  {:cont, acc}
+                [{:lines, [l|lines]}] ->
+                  true = :ets.insert ets, [{:lines, lines}]
+                  {:halt, l}
+              end
+            rescue
+              _ -> {:halt, "HANGUP\n"}
+            catch
+              _,_ -> {:halt, "HANGUP\n"}
             end
           end)
         end
