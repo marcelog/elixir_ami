@@ -159,18 +159,17 @@ Conn.del_listener :my_connection, listener_id
 Async AGI is supported with the use of [elixir_agi](https://github.com/marcelog/elixir_agi).
 
 ```elixir
-Conn.async_agi :my_connection, TestAgiApp, %{}
+Conn.async_agi :my_connection, TestAgiApp, :run
 ```
 
 This will start listening for [AsyncAGIStart](https://wiki.asterisk.org/wiki/display/AST/Asterisk+13+ManagerEvent_AsyncAGIStart) events
-on the given connection and launch the AGI App contained in the module `TestAgiApp` and start it with the given
-initial state `%{}`.
+on the given connection and launch the AGI App by spawning a process and calling `TestAgiApp.run/1`.
 
 Note that this will listen for AsyncAGIStart events for **all channels**. You can specify a channel name with the
 optional ending argument:
 
 ```elixir
-Conn.async_agi :my_connection, TestAgiApp, %{}, "SIP/trunk-234132423"
+Conn.async_agi :my_connection, TestAgiApp, :run, "SIP/trunk-234132423"
 ```
 
 ----

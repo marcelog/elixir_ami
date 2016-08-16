@@ -145,8 +145,8 @@ defmodule ElixirAmi.Connection do
   Waits for an asyncagistart event on an optional channel and starts an
   agi application with elixir_agi.
   """
-  @spec async_agi(GenServer.server, module, any, String.t) :: :ok
-  def async_agi(server, app_module, app_state, channel \\ nil) do
+  @spec async_agi(GenServer.server, module, atom, String.t) :: :ok
+  def async_agi(server, app_module, app_function, channel \\ nil) do
     caller = self
     # Setup a listener for AsyncAGIStart so a new AGI App can be started
     add_listener(
@@ -220,7 +220,6 @@ defmodule ElixirAmi.Connection do
           command_id = ElixirAmi.Util.unique_id
           action = Action.agi e.keys["channel"], data, command_id
           response = send_action server, action
-          true = response.success
           :ok
         end
         init = fn() ->
@@ -229,9 +228,10 @@ defmodule ElixirAmi.Connection do
         close = fn() ->
           :ok
         end
-        {:ok, _pid} = ElixirAgi.Supervisor.Agi.new(
-          app_module, app_state, init, reader, writer, close
-        )
+        agi = ElixirAgi.Agi.new init, close, reader, writer
+        spawn(fn() ->
+          :erlang.apply app_module, app_function, [agi]
+        end)
         # Don't start another AGI App if a channel was explicitely given
         if not is_nil channel do
           del_listener server, listener_id
