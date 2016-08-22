@@ -29,7 +29,8 @@ defmodule ElixirAmi.Connection do
     password: nil,
     connect_timeout: 5000,
     reconnect_timeout: 5000,
-    ssl_options: nil
+    ssl_options: nil,
+    debug: false
 
   alias ElixirAmi.Action, as: Action
   alias ElixirAmi.Message, as: Message
@@ -51,9 +52,15 @@ defmodule ElixirAmi.Connection do
   end
 
   defmacro log(level, message) do
-    quote do
+    quote bind_quoted: [
+      level: level,
+      message: message
+    ] do
       state = var! state
-      Logger.unquote(level)("ElixirAmi: #{state.info.name} #{unquote(message)}")
+      level_str = to_string level
+      if((level_str !== "debug") or state.info.debug) do
+        Logger.bare_log level, "ElixirAmi: #{state.info.name} #{message}"
+      end
     end
   end
 
@@ -93,6 +100,22 @@ defmodule ElixirAmi.Connection do
   @spec close(GenServer.server) :: :ok
   def close(server) do
     GenServer.cast server, :close
+  end
+
+  @doc """
+  Enables debug.
+  """
+  @spec debug(GenServer.server) :: :ok
+  def debug(server) do
+    GenServer.cast server, :debug
+  end
+
+  @doc """
+  Disables debug.
+  """
+  @spec undebug(GenServer.server) :: :ok
+  def undebug(server) do
+    GenServer.cast server, :undebug
   end
 
   @doc """
@@ -219,7 +242,7 @@ defmodule ElixirAmi.Connection do
           [data, _] = data
           command_id = ElixirAmi.Util.unique_id
           action = Action.agi e.keys["channel"], data, command_id
-          response = send_action server, action
+          _response = send_action server, action
           :ok
         end
         init = fn() ->
@@ -324,6 +347,14 @@ defmodule ElixirAmi.Connection do
       :erlang.apply state.socket_module, :close, [state.socket]
     end
     {:stop, :normal, state}
+  end
+
+  def handle_cast(:debug, state) do
+    {:noreply, %{state | info: %{state.info | debug: true}}}
+  end
+
+  def handle_cast(:undebug, state) do
+    {:noreply, %{state | info: %{state.info | debug: false}}}
   end
 
   def handle_cast(message, state) do
