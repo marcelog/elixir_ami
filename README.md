@@ -169,7 +169,7 @@ Note that this will listen for AsyncAGIStart events for **all channels**. You ca
 optional ending argument:
 
 ```elixir
-Conn.async_agi :my_connection, TestAgiApp, :run, "SIP/trunk-234132423"
+Conn.async_agi :my_connection, TestAgiApp, :run, true, "SIP/trunk-234132423"
 ```
 
 ----
