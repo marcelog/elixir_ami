@@ -1,3 +1,3 @@
 %{"earmark": {:hex, :earmark, "0.1.18", "41b774488a14d07ba76796a5b23de041b89d75a2460847750c4174113a772249", [:mix], []},
-  "elixir_agi": {:hex, :elixir_agi, "0.0.12", "13a9b83b3590b1035c63c8bebc4423753355d9d103f371e0088786d4fe7f6e49", [:mix], []},
+  "elixir_agi": {:hex, :elixir_agi, "0.0.13", "b2a3f63a1c7ccfe101bed89ea59b34aa5816119bfe68574843ee21f2bfd5a53a", [:mix], []},
   "ex_doc": {:hex, :ex_doc, "0.10.0", "f49c237250b829df986486b38f043e6f8e19d19b41101987f7214543f75947ec", [:mix], [{:earmark, "~> 0.1.17 or ~> 0.2", [hex: :earmark, optional: true]}]}}
