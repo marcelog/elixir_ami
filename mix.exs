@@ -44,7 +44,7 @@ Find the user guide in the github repo at: https://github.com/marcelog/elixir_am
 
   defp deps do
     [
-      {:elixir_agi, "~> 0.0.12"},
+      {:elixir_agi, "~> 0.0.13"},
       {:ex_doc, "~> 0.7", only: :dev},
       {:earmark, "~> 0.1", only: :dev}
     ]
