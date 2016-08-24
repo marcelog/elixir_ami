@@ -5,7 +5,7 @@ defmodule ElixirAmi.Mixfile do
     [
       app: :elixir_ami,
       name: "elixir_ami",
-      version: "0.0.15",
+      version: "0.0.16",
       elixir: "~> 1.0",
       description: description,
       package: package,
