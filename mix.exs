@@ -5,14 +5,14 @@ defmodule ElixirAmi.Mixfile do
     [
       app: :elixir_ami,
       name: "elixir_ami",
-      version: "0.0.16",
+      version: "0.0.20",
       elixir: "~> 1.0",
-      description: description,
-      package: package,
+      description: description(),
+      package: package(),
       source_url: "https://github.com/marcelog/elixir_ami",
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
-      deps: deps
+      deps: deps()
     ]
   end
 
@@ -44,9 +44,9 @@ Find the user guide in the github repo at: https://github.com/marcelog/elixir_am
 
   defp deps do
     [
-      {:elixir_agi, "~> 0.0.13"},
-      {:ex_doc, "~> 0.7", only: :dev},
-      {:earmark, "~> 0.1", only: :dev}
+      {:elixir_agi, "~> 0.0.20"},
+      {:earmark, "~> 1.0.3", only: :dev},
+      {:ex_doc, "~> 0.14.5", only: :dev}
     ]
   end
 end

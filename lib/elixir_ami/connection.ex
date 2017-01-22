@@ -47,7 +47,7 @@ defmodule ElixirAmi.Connection do
   defmacro schedule_reconnect() do
     quote [location: :keep] do
       state = var! state
-      :erlang.send_after state.info.reconnect_timeout, self, :connect
+      :erlang.send_after state.info.reconnect_timeout, self(), :connect
     end
   end
 
@@ -170,7 +170,7 @@ defmodule ElixirAmi.Connection do
   """
   @spec async_agi(GenServer.server, module, atom, boolean, String.t) :: :ok
   def async_agi(server, app_module, app_function, debug, channel \\ nil) do
-    caller = self
+    caller = self()
     # Setup a listener for AsyncAGIStart so a new AGI App can be started
     add_listener(
       server,
@@ -268,7 +268,7 @@ defmodule ElixirAmi.Connection do
   """
   @spec init(t) :: {:ok, state}
   def init(info) do
-    send self, :connect
+    send self(), :connect
     socket_module = if(is_nil info.ssl_options) do
       :gen_tcp
     else
@@ -293,7 +293,7 @@ defmodule ElixirAmi.Connection do
     {:noreply, state} | {:reply, term, state}
 
   def handle_call({:add_listener, filter, listener, options}, _from, state) do
-    me = self
+    me = self()
     id = ElixirAmi.Util.unique_id
     Logger.debug "adding listener: #{id}"
     listener = if :once in options do
@@ -388,12 +388,12 @@ defmodule ElixirAmi.Connection do
             {:noreply, %{state | socket: socket}}
           e ->
             log :error, "could not connect to #{state.info.host}: #{inspect e}"
-            schedule_reconnect
+            schedule_reconnect()
             {:noreply, state}
         end
       e ->
         log :error, "could not resolve #{state.info.host}: #{inspect e}"
-        schedule_reconnect
+        schedule_reconnect()
         {:noreply, state}
     end
   end
